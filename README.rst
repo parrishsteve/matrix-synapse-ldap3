@@ -22,6 +22,10 @@ Example synapse config:
         uri: "ldap://ldap.example.com:389"
         start_tls: true
         base: "ou=users,dc=example,dc=com"
+        # If the bind_dn_domain is set then use 
+        # windows style bind_dn construction, othe wise the 'base'
+        # in the bind_dn 
+        bind_dn_domain: "ptown.local"
         attributes:
            uid: "cn"
            mail: "email"

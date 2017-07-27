@@ -65,6 +65,7 @@ class LdapAuthProvider(object):
         self.ldap_uri = config.uri
         self.ldap_start_tls = config.start_tls
         self.ldap_base = config.base
+        self.ldap_bind_dn_domain = config.bind_dn_domain
         self.ldap_attributes = config.attributes
         if self.ldap_mode == LDAPMode.SEARCH:
             self.ldap_bind_dn = config.bind_dn
@@ -92,10 +93,19 @@ class LdapAuthProvider(object):
             )
 
             if self.ldap_mode == LDAPMode.SIMPLE:
-                bind_dn = "{prop}={value},{base}".format(
-                    prop=self.ldap_attributes['uid'],
+                # construct the bind_dn.  If there's a 'bind_dn_domain' value
+                # Then construct it the windows way where e.g 'uid@domain'
+                # Otherwise contruct a typical bind_dn
+                if self.ldap_bind_dn_domain:
+                    bind_dn = "{value}@{domain}".format(
                     value=localpart,
-                    base=self.ldap_base
+                    domain=self.ldap_bind_dn_domain
+                )
+                else:
+                    bind_dn = "{prop}={value},{base}".format(
+                     prop=self.ldap_attributes['uid'],
+                     value=localpart,
+                     base=self.ldap_base
                 )
                 result, conn = yield self._ldap_simple_bind(
                     server=server, bind_dn=bind_dn, password=password
@@ -235,6 +245,10 @@ class LdapAuthProvider(object):
         ldap_config.start_tls = config.get("start_tls", False)
         ldap_config.base = config["base"]
         ldap_config.attributes = config["attributes"]
+        ldap_config.bind_dn_domain = ""
+
+        if "bind_dn_domain" in config:
+            ldap_config.bind_dn_domain = config["bind_dn_domain"]
 
         if "bind_dn" in config:
             ldap_config.mode = LDAPMode.SEARCH
